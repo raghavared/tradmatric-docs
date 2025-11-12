@@ -1,0 +1,66 @@
+{
+  "name": "TradMatrix",
+  "logo": {
+    "light": "/public/logo.svg",
+    "dark": "/public/logo.svg"
+  },
+  "favicon": "/public/logo.svg",
+  "colors": {
+    "primary": "#667eea",
+    "light": "#764ba2",
+    "dark": "#5568d3",
+    "background": {
+      "dark": "#0f172a"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/tradmatrix"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Launch App",
+    "url": "https://app.tradmatrix.io"
+  },
+  "tabs": [
+    {
+      "name": "Technical",
+      "url": "technical"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Introduction",
+      "pages": [
+        "introduction",
+        "how-it-works",
+        "benefits"
+      ]
+    },
+    {
+      "group": "Getting Started",
+      "pages": [
+        "getting-started/for-users",
+        "getting-started/for-asset-owners"
+      ]
+    },
+    {
+      "group": "Roadmap",
+      "pages": [
+        "roadmap/overview"
+      ]
+    },
+    {
+      "group": "Technical",
+      "pages": [
+        "technical/architecture"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "twitter": "https://twitter.com/tradmatrix",
+    "github": "https://github.com/tradmatrix",
+    "discord": "https://discord.gg/tradmatrix"
+  }
+}

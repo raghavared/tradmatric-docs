@@ -1,0 +1,168 @@
+---
+title: 'How It Works'
+description: 'Step-by-step guide to the TradMatrix Asset trading process'
+---
+
+## The Complete Flow
+
+<Steps>
+  <Step title="Asset Listing">
+    Asset owner lists their asset on TradMatrix with:
+    - Asset details and images (up to 50 photos)
+    - Total number of tickets
+    - Price per ticket
+    - Verification documents
+  </Step>
+  
+  <Step title="Ticket Sales">
+    Participants purchase tickets using USDC:
+    - Connect Solana wallet
+    - Buy 1 or multiple tickets
+    - Each ticket = 1 entry
+    - Sales tracked in real-time
+  </Step>
+  
+  <Step title="Sold Out">
+    When all tickets are sold:
+    - Asset status changes to "Sold Out"
+    - Funds held in escrow
+    - Ready for winner selection
+  </Step>
+  
+  <Step title="Winner Selection">
+    Provably fair random selection:
+    - Uses Switchboard VRF for randomness
+    - Cannot be manipulated
+    - Transparent on-chain
+    - Winner immediately notified
+  </Step>
+  
+  <Step title="Settlement">
+    Automatic fund distribution:
+    - 98.5% → Asset Owner
+    - 1.5% → Platform Fee
+    - Winner receives asset ownership
+  </Step>
+</Steps>
+
+## Detailed Process
+
+### 1. Asset Listing
+
+Asset owners create a listing by calling the `create_asset` instruction:
+
+```typescript
+// Example: $500K asset with 5,000 tickets at $100 each
+const assetParams = {
+  numberOfTickets: 5000,
+  ticketCost: 100_000_000, // 100 USDC (6 decimals)
+  assetOwner: ownerPublicKey,
+  platformAuthority: platformPublicKey
+};
+```
+
+The platform creates:
+- **Asset PDA**: Stores all asset information
+- **Asset Vault**: Holds USDC from ticket sales
+- **Unique Asset ID**: Auto-incrementing identifier
+
+### 2. Ticket Purchase
+
+Users buy tickets by calling the `buy_ticket` instruction:
+
+```typescript
+// Purchase tickets
+const ticketPurchase = {
+  assetId: 0,
+  quantity: 5, // Buy 5 tickets
+  buyer: userPublicKey
+};
+```
+
+Each purchase:
+- Transfers USDC to asset vault
+- Creates ticket PDA with unique number (0, 1, 2, ...)
+- Updates asset's `ticketsSold` counter
+- Emits `TicketPurchased` event
+
+### 3. Winner Selection
+
+When sold out, admin calls `pick_winner` instruction:
+
+```typescript
+// Random winner selection
+const winnerSelection = {
+  assetId: 0,
+  vrfAccount: switchboardVrfAccount
+};
+```
+
+The process:
+1. Fetches random value from Switchboard VRF
+2. Calculates: `winningTicket = randomValue % totalTickets`
+3. Looks up ticket owner from on-chain PDA
+4. Distributes funds automatically
+5. Emits `WinnerSelected` event
+
+## Probability Mechanics
+
+### Fair Odds
+
+Your winning probability is straightforward:
+
+```
+P(win) = (your tickets) / (total tickets)
+
+Examples:
+- 1 ticket of 5,000 = 0.02% chance
+- 10 tickets of 5,000 = 0.2% chance
+- 100 tickets of 5,000 = 2% chance
+```
+
+### Multiple Ticket Strategy
+
+Buying more tickets increases your probability:
+
+<Accordion title="Probability Calculator">
+```
+Asset: 5,000 tickets @ $100 each
+Investment vs Probability:
+
+$100 (1 ticket)    → 0.02% chance
+$500 (5 tickets)   → 0.10% chance
+$1,000 (10 tickets) → 0.20% chance
+$5,000 (50 tickets) → 1.00% chance
+```
+</Accordion>
+
+## Security Guarantees
+
+<Warning>
+  **Verifiable Randomness**: TradMatrix uses Switchboard VRF, which provides cryptographically secure randomness that cannot be predicted or manipulated by anyone, including platform operators.
+</Warning>
+
+### How VRF Works
+
+1. **Request**: Winner selection requests random value
+2. **Generate**: Switchboard oracle generates provably random number
+3. **Verify**: Anyone can verify the randomness was generated correctly
+4. **Immutable**: Result is stored on-chain permanently
+
+This ensures:
+- No one can predict the winner
+- No one can manipulate the result
+- All participants have equal odds
+- Process is completely transparent
+
+## What Happens Next?
+
+After winning:
+1. Winner notified via email/SMS/push notification
+2. Asset ownership transfer process initiated
+3. Legal documentation provided
+4. Ownership transfer completed
+
+<Card title="Next: Benefits" icon="star" href="/benefits">
+  Learn about the benefits for asset owners and participants
+</Card>
+
