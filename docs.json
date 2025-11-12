@@ -1,5 +1,6 @@
 {
   "name": "TradMatrix",
+  "theme": "mint",
   "logo": {
     "light": "/public/logo.svg",
     "dark": "/public/logo.svg"
