@@ -2,16 +2,16 @@
   "name": "TradMatrix",
   "theme": "prism",
   "logo": {
-    "light": "/public/logo.svg",
-    "dark": "/public/logo.svg"
+    "light": "/public/lego_logo_black.png",
+    "dark": "/public/lego_logo.png"
   },
-  "favicon": "/public/logo.svg",
+  "favicon": "/public/lego_logo.png",
   "colors": {
-    "primary": "#667eea",
-    "light": "#764ba2",
-    "dark": "#5568d3",
+    "primary": "#d4af37",
+    "light": "#f4e4a7",
+    "dark": "#b8941f",
     "background": {
-      "dark": "#0f172a"
+      "dark": "#0f0f0f"
     }
   },
   "topbarLinks": [
