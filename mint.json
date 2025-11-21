@@ -2,8 +2,8 @@
   "name": "TradMatrix",
   "theme": "prism",
   "logo": {
-    "light": "/public/lego_logo_black.png",
-    "dark": "/public/lego_logo.png"
+    "light": "/lego_logo_black.png",
+    "dark": "/lego_logo.png"
   },
   "favicon": "/public/lego_logo.png",
   "colors": {
