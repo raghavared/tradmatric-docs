@@ -1,65 +1,148 @@
 ---
-title: 'Welcome to TradMatrix'
-description: 'Decentralized asset platform on Solana'
+title: 'Introduction'
+description: 'Discover Tradmatrix - A decentralized asset ownership platform powered by Solana'
 ---
 
-TradMatrix is a revolutionary decentralized Asset trading platform that democratizes access to high-value assets through provably fair ticket-based systems on the Solana blockchain.
+# Welcome to Tradmatrix
 
-## The Problem
+Tradmatrix is a decentralized asset ownership platform built on Solana blockchain, enabling fractional participation in real-world assets through a ticket-based distribution system with provably-fair winner selection.
 
-Traditional asset ownership has significant barriers:
-- **High upfront costs** - Most people cannot afford luxury assets
-- **Illiquidity** - Asset owners struggle to sell quickly
-- **Trust issues** - Traditional lotteries lack transparency
-
-## The Solution
-
-TradMatrix creates a win-win marketplace where:
-- **Asset owners** can quickly liquidate their assets at fair value
-- **Participants** get affordable access to high-value assets
-- **Everyone** benefits from blockchain transparency and fairness
-
-## Quick Example
-
-An asset owner lists a $500,000 property on TradMatrix:
-
-```
-Asset Value: $500,000
-Ticket Price: $100
-Total Tickets: 5,000
-Owner Receives: $492,500 (98.5%)
-Platform Fee: $7,500 (1.5%)
-Winner Gets: $500,000 property
-```
-
-**Everyone wins:**
-- Owner gets quick liquidity at 98.5% of asset value
-- Winner gets a $500,000 asset for $100
-- 4,999 participants had a chance at fair odds
-
-## Key Features
+## Platform Overview
 
 <CardGroup cols={2}>
-  <Card title="Provably Fair" icon="dice">
-    Verifiable randomness using Switchboard VRF ensures no manipulation
+  <Card title="Decentralized Ownership" icon="handshake">
+    Participate in asset ownership with transparent, blockchain-verified transactions
   </Card>
-  <Card title="Transparent" icon="eye">
-    All transactions and results recorded on Solana blockchain
+  <Card title="Provably Fair" icon="shield-check">
+    Cryptographically verified winner selection using Entropy's provably fair algorithm
   </Card>
-  <Card title="Fast Settlement" icon="bolt">
-    Asset owners receive funds immediately after all tickets sold
+  <Card title="Low Costs" icon="zap">
+    Leverage Solana's high-throughput, low-cost blockchain infrastructure
   </Card>
-  <Card title="Low Fees" icon="dollar-sign">
-    Only 1.5% platform fee - 98.5% goes to asset owner
+  <Card title="Instant Settlement" icon="clock">
+    Near-instant transaction confirmation and automated payouts
   </Card>
 </CardGroup>
 
-## Use Cases
+## Core Features
 
-- **Real Estate**: Sell properties quickly without traditional agents
-- **Luxury Items**: Cars, watches, art, collectibles
-- **Business Assets**: Equipment, inventory, franchises
-- **Digital Assets**: NFTs, domain names, IP rights
+### Ticket-Based Participation
+Purchase tickets for fractional ownership opportunities. Each ticket represents an equal probability in the selection mechanism. The system ensures transparent ticket numbering, automated distribution, and cryptographic fairness.
 
-<Check>Ready to get started? Check out [How It Works](/how-it-works)</Check>
+### Cryptographic Randomness
+Winner selection uses the Entropy protocol's commit-reveal scheme combined with Solana slot hashing. This ensures that no single party—neither the platform, validators, nor participants—can predict or manipulate the outcome.
 
+### Automated Settlement
+Once all tickets are distributed, the winner is selected automatically using verifiable randomness. Platform fees are deducted transparently (1.5%), with the remaining proceeds (98.5%) distributed to the asset owner.
+
+### Seamless Wallet Integration
+Connect with popular Solana wallets including Phantom, Solflare, and others. Sign transactions directly from your wallet without sharing private keys.
+
+### Real-time Monitoring
+Track asset status, ticket sales, and transaction progress through an intuitive dashboard with live updates.
+
+## How It Works
+
+<Steps>
+  <Step title="Asset Creation">
+    Asset owners create a participation event by specifying the asset details, number of available tickets, and ticket price in USDC.
+  </Step>
+  <Step title="Ticket Acquisition">
+    Participants purchase tickets using USDC tokens. Each ticket represents an equal chance in the fair selection mechanism.
+  </Step>
+  <Step title="Distribution Trigger">
+    Once all tickets are sold, the system automatically initiates the winner selection process.
+  </Step>
+  <Step title="Cryptographic Selection">
+    The Entropy protocol performs verifiable randomness generation using pre-committed secrets and Solana slot hashes to select the winner.
+  </Step>
+  <Step title="Settlement">
+    Winner is announced, proceeds are distributed (platform receives 1.5% fee, asset owner receives 98.5%), and ownership transfer is recorded on-chain.
+  </Step>
+</Steps>
+
+## Technology Stack
+
+### On-Chain Smart Contract
+<CardGroup cols={2}>
+  <Card title="Solana" icon="link">
+    High-performance blockchain with 400ms finality and sub-penny transaction costs
+  </Card>
+  <Card title="Anchor Framework" icon="code">
+    Type-safe Rust development framework for Solana smart contracts with built-in security features
+  </Card>
+  <Card title="SPL Tokens" icon="coins">
+    Standard token protocol for USDC settlement and cross-token compatibility
+  </Card>
+  <Card title="Entropy Protocol" icon="sparkles">
+    Decentralized randomness protocol for provably-fair winner selection
+  </Card>
+</CardGroup>
+
+## Security Model
+
+### Cryptographic Guarantees
+- **Provably Fair**: Winner selection uses cryptographic randomness that cannot be predicted or manipulated
+- **Non-Repudiation**: All transactions are signed and recorded on immutable blockchain
+- **No Private Key Exposure**: Wallet transactions signed locally, keys never shared
+
+### On-Chain Validation
+- Account ownership verification for all transaction signers
+- Status validation preventing invalid state transitions
+- Arithmetic overflow protection using checked operations
+- Constraint-based permission system for sensitive operations
+
+### Backend Security
+- JWT-based authentication with time-bound tokens
+- Wallet signature verification for ownership proof
+- Rate limiting to prevent abuse
+- CORS restrictions for browser-based requests
+- Environment-based secret management
+
+## Getting Started
+
+Ready to participate? Choose your path:
+
+<CardGroup>
+  <Card title="For Participants" icon="users" href="/getting-started/for-users">
+    Learn how to connect your wallet, purchase tickets, and participate
+  </Card>
+  <Card title="For Asset Owners" icon="briefcase" href="/getting-started/for-asset-owners">
+    Create events, manage assets, and distribute ownership opportunities
+  </Card>
+  <Card title="Technical Documentation" icon="code" href="/technical/architecture">
+    Explore system architecture, smart contracts, and integration details
+  </Card>
+</CardGroup>
+
+## Why Tradmatrix?
+
+**Transparency**: Every transaction recorded on-chain, visible to all participants
+
+**Fairness**: Cryptographic randomness guarantees unbiased winner selection
+
+**Accessibility**: Low barrier to entry with fractional ticket-based participation
+
+**Efficiency**: Solana's infrastructure enables low costs and instant settlement
+
+**Trust**: Decentralized architecture eliminates single points of failure
+
+## Legal & Compliance
+
+<Warning>
+Tradmatrix is available in most jurisdictions but restricted in certain regions. Please review our Terms of Service and Privacy Policy for complete information on legal terms, disclaimers, and jurisdiction restrictions.
+</Warning>
+
+## Support & Community
+
+Have questions? Reach out to our community:
+
+- **GitHub**: [github.com/tradmatrix](https://github.com/tradmatrix)
+- **Discord**: Join our community server
+- **Twitter**: [@tradmatrix](https://twitter.com/tradmatrix)
+
+---
+
+<Card title="Next: How It Works" icon="arrow-right" href="/how-it-works">
+  Deep dive into the mechanics and workflow of the platform
+</Card>

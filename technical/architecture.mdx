@@ -1,361 +1,412 @@
 ---
-title: 'Technical Architecture'
-description: 'Complete system architecture overview'
+title: 'System Architecture'
+description: 'Complete technical architecture of Tradmatrix platform'
 ---
 
-## System Overview
+# Tradmatrix System Architecture
 
-TradMatrix is built on a modern stack combining blockchain, traditional backend, and responsive frontend.
+## Overview
 
-```mermaid
-graph TB
-    subgraph Frontend
-        A[React SPA]
-        B[Wallet Adapter]
-    end
-    
-    subgraph Backend
-        C[Express API]
-        D[Event Listener]
-        E[MongoDB]
-    end
-    
-    subgraph Blockchain
-        F[Solana Program]
-        G[Switchboard VRF]
-        H[USDC Token]
-    end
-    
-    A --> B
-    B --> F
-    A --> C
-    C --> E
-    D --> F
-    D --> E
-    F --> G
-    F --> H
-```
+Tradmatrix is a provably-fair asset ownership distribution platform built on Solana. The system enables fractional asset participation through ticket-based distribution with cryptographically verified winner selection using the Entropy protocol's commit-reveal scheme.
 
-## Technology Stack
+<Note>
+**Key Innovation**: The Entropy commit-reveal scheme, combined with Solana's slot hashing, ensures that no single party can predict or manipulate the winner selection outcome.
+</Note>
 
-### Blockchain Layer
+## Core Guarantees
 
-<CardGroup cols={3}>
-  <Card title="Solana" icon="link">
-    High-performance blockchain
-    - 400ms block time
-    - Low transaction costs
-    - High throughput
+<CardGroup cols={2}>
+  <Card title="Provably Fair" icon="shield-check">
+    Commit-reveal scheme with cryptographic randomness prevents prediction or manipulation
   </Card>
-  <Card title="Anchor" icon="anchor">
-    Solana development framework
-    - Type-safe Rust
-    - Built-in security
-    - Easy testing
+  <Card title="Permissionless Verification" icon="unlock">
+    Any participant can verify the winner selection process on-chain
   </Card>
-  <Card title="Switchboard" icon="shuffle">
-    Decentralized oracle network
-    - Verifiable randomness
-    - Fair winner selection
-    - On-chain verification
+  <Card title="Censorship Resistant" icon="lock-open">
+    Distributed randomness sampling prevents single-party manipulation
+  </Card>
+  <Card title="Immutable Records" icon="bookmark">
+    All transactions and winner selection recorded on-chain
   </Card>
 </CardGroup>
 
-### Backend Layer
+## System Layers
 
-<CardGroup cols={3}>
-  <Card title="Express.js" icon="server">
-    REST API server
-    - TypeScript
-    - JWT authentication
-    - Rate limiting
-  </Card>
-  <Card title="MongoDB" icon="database">
-    NoSQL database
-    - Event storage
-    - User data
-    - Fast queries
-  </Card>
-  <Card title="Node.js" icon="node-js">
-    Event listener service
-    - Real-time monitoring
-    - Background jobs
-    - Notifications
-  </Card>
-</CardGroup>
+### Layer 1: On-Chain Smart Contracts (Solana)
 
-### Frontend Layer
-
-<CardGroup cols={3}>
-  <Card title="React" icon="react">
-    Modern UI framework
-    - TypeScript
-    - Hooks API
-    - Component-based
-  </Card>
-  <Card title="Vite" icon="bolt">
-    Build tool
-    - Fast HMR
-    - Optimized bundling
-    - ES modules
-  </Card>
-  <Card title="Wallet Adapter" icon="wallet">
-    Solana wallet integration
-    - Phantom support
-    - Auto-connect
-    - Transaction signing
-  </Card>
-</CardGroup>
-
-## Data Flow
-
-### Asset Creation
-
-1. Admin calls `create_asset` on Solana program
-2. Program emits `AssetCreated` event
-3. Backend event listener catches event
-4. Event stored in MongoDB
-5. Asset record created in database
-6. Frontend polls API and displays new asset
-
-### Ticket Purchase
-
-1. User clicks "Buy Ticket" in frontend
-2. Wallet adapter prompts for approval
-3. `buy_ticket` transaction sent to Solana
-4. USDC transferred to asset vault
-5. Ticket PDA created on-chain
-6. `TicketPurchased` event emitted
-7. Backend processes event
-8. Database updated with new ticket
-9. Frontend shows updated ticket count
-
-### Winner Selection
-
-1. Admin triggers `pick_winner` when sold out
-2. Program requests random value from Switchboard VRF
-3. Winning ticket number calculated on-chain
-4. Funds automatically distributed:
-   - 98.5% to asset owner
-   - 1.5% to platform
-5. `WinnerSelected` event emitted
-6. Backend catches event and updates DB
-7. Notification service alerts winner
-8. Frontend displays winner announcement
-
-## Smart Contract Architecture
-
-### Program Structure
-
-```
-programs/trad-matrix/
-├── src/
-│   ├── lib.rs                 # Program entry point
-│   ├── state/                 # Account structures
-│   │   ├── trad_matrix.rs     # Global state
-│   │   ├── asset.rs           # Asset accounts
-│   │   ├── ticket.rs          # Ticket accounts
-│   │   └── user.rs            # User accounts
-│   ├── instructions/          # Business logic
-│   │   ├── create_trad_matrix.rs
-│   │   ├── create_asset.rs
-│   │   ├── init_user.rs
-│   │   ├── buy_ticket.rs
-│   │   └── pick_winner.rs
-│   ├── events.rs              # Event emissions
-│   └── errors.rs              # Custom errors
-```
-
-### Account Types
+The Solana program manages all critical operations including asset creation, ticket distribution, and provably-fair winner selection.
 
 <Tabs>
-  <Tab title="TradMatrix">
-    Global state account (singleton)
-    ```rust
-    pub struct TradMatrix {
-        pub admin: Pubkey,           // Platform admin
-        pub asset_counter: u64,      // Auto-increment
-        pub bump: u8,                // PDA bump
-    }
-    ```
+  <Tab title="Core Instructions">
+    **6 Primary Instructions**
+    - `create_tradmatrix` - Initialize platform (admin-only, one-time)
+    - `create_asset` - Create participation event with tickets and pricing
+    - `init_user` - Onboard participant
+    - `buy_ticket` - Purchase participation ticket
+    - `pick_winner` - Select winner using provably fair algorithm, distribute proceeds
+    - `settle_winner` - Record winner's wallet address
   </Tab>
-  
+  <Tab title="Entropy Instructions">
+    **7 Randomness Instructions**
+    - `open_var` - Initialize randomness account with commit hash
+    - `update_end_at` - Set target slot for randomness sampling
+    - `sample_var` - **PERMISSIONLESS** - Capture Solana slot hash
+    - `reveal_var` - Reveal pre-committed seed, compute final random value
+    - `next_var` - Enable backup winner selection (seed chaining)
+    - `increase_samples` - Add iterations for multiple selections
+    - `close_var` - Cleanup randomness state, reclaim rent
+  </Tab>
+</Tabs>
+
+
+## Data Model
+
+<Tabs>
   <Tab title="Asset">
-    Individual asset/lottery
-    ```rust
-    pub struct Asset {
-        pub asset_id: u64,
-        pub number_of_tickets: u64,
-        pub latest_ticket_id: u64,
-        pub ticket_cost: u64,
-        pub asset_owner: Pubkey,
-        pub platform_authority: Pubkey,
-        pub winner: Option<Pubkey>,
-        pub status: AssetStatus,
-        pub bump: u8,
+    ```typescript
+    {
+      assetId: number,
+      status: "ACTIVE" | "SOLD_OUT" | "COMPLETED",
+      numberOfTickets: number,
+      ticketCost: number (in lamports),
+      ticketsSold: number,
+      assetOwner: PublicKey,
+      proceeds: bigint,
+      winner?: PublicKey
     }
     ```
   </Tab>
-  
   <Tab title="Ticket">
-    Individual ticket purchase
-    ```rust
-    pub struct Ticket {
-        pub asset_id: u64,
-        pub user: Pubkey,
-        pub ticket_cost: u64,
-        pub ticket_number: u64,
-        pub bump: u8,
+    ```typescript
+    {
+      ticketNumber: number, // 1-indexed: 1 to numberOfTickets
+      assetId: number,
+      owner: PublicKey,
+      isPurchased: boolean,
+      isWon?: boolean,
+      purchasedAt: Date
     }
     ```
   </Tab>
-  
   <Tab title="User">
-    User profile
-    ```rust
-    pub struct User {
-        pub username: String,
-        pub wallet_address: Pubkey,
-        pub bump: u8,
+    ```typescript
+    {
+      wallet: PublicKey,
+      username: string,
+      createdAt: Date,
+      totalTickets: number
+    }
+    ```
+  </Tab>
+  <Tab title="Entropy Secret">
+    ```typescript
+    {
+      assetId: number,
+      commit: Buffer,    // 32 bytes (keccak256 hash)
+      seed: Buffer,      // 32 bytes (encrypted with AES-256-GCM)
+      iteration: number,
+      createdAt: Date,
+      revealedAt?: Date
     }
     ```
   </Tab>
 </Tabs>
 
-## Security Architecture
+## Transaction Flow
 
-### On-Chain Security
+### Phase 1: Platform Initialization
 
 <Steps>
-  <Step title="Account Validation">
-    Verify all PDAs match expected derivation
-  </Step>
-  <Step title="Ownership Checks">
-    Ensure users own accounts they're modifying
-  </Step>
-  <Step title="Status Validation">
-    Check asset status before operations
-  </Step>
-  <Step title="Overflow Protection">
-    Use checked math for all arithmetic
+  <Step title="create_tradmatrix">
+    Admin initializes global program state. One-time operation.
   </Step>
 </Steps>
 
-### Backend Security
+### Phase 2: Asset & Randomness Setup
 
-- **JWT Authentication**: Signed tokens with expiration
-- **Wallet Signature Verification**: Prove wallet ownership
-- **Rate Limiting**: Prevent abuse
-- **Input Validation**: Sanitize all user input
-- **CORS Configuration**: Restrict origins
-- **Environment Variables**: Secrets not in code
+<Steps>
+  <Step title="create_asset + open_var (Batched)">
+    Admin creates participation event and initializes randomness account with cryptographic commitment.
 
-### Frontend Security
+    **Batching Benefit**: Atomic initialization ensures randomness account exists before any operations.
+  </Step>
+</Steps>
 
-- **No Private Keys**: Only public operations
-- **Wallet Adapter**: Secure transaction signing
-- **HTTPS Only**: Encrypted communication
-- **XSS Prevention**: React auto-escaping
-- **CSP Headers**: Content security policy
+### Phase 3: Ticket Sales
 
-## Scalability Considerations
+<Steps>
+  <Step title="User 1: init_user + buy_ticket (Batched)">
+    First participant creates account and purchases ticket. Operations batched for efficiency.
+  </Step>
+  <Step title="User N: buy_ticket (Sequential)">
+    Subsequent participants submit separate transactions to avoid write conflicts on `ticketsSold` counter.
+  </Step>
+  <Step title="Auto-Status Transition">
+    When final ticket sells, asset status automatically transitions to `SOLD_OUT`.
+  </Step>
+</Steps>
 
-### Current Limits
+### Phase 4-8: Cryptographic Winner Selection
 
-- **Solana**: 65,000 TPS theoretical, 2,000-3,000 TPS practical
-- **MongoDB**: Millions of documents, sharding available
-- **Express**: Horizontal scaling with load balancer
-- **Frontend**: Static files on CDN
+The Entropy protocol ensures fair selection through a commit-reveal scheme:
 
-### Scaling Strategy
+```
+[Asset Sold Out]
+        ↓
+[5s Safety Buffer]
+        ↓
+TX4: update_end_at (set target slot)
+        ↓
+[~5 seconds for slot progression]
+        ↓
+TX5: sample_var (PERMISSIONLESS - capture slot hash)
+        ↓
+TX6: reveal_var (reveal pre-committed seed)
+        ↓
+TX7: pick_winner (compute winner from random value)
+        ↓
+TX8: settle_winner (record winner address)
+```
 
-As platform grows:
+**Timeline**: 15-20 seconds from sold out to winner settled
 
-1. **Database**: Implement read replicas, sharding
-2. **API**: Add load balancer, auto-scaling
-3. **Caching**: Redis for hot data
-4. **CDN**: CloudFlare for static assets
-5. **Queue**: Bull for background jobs
+## Provably Fair Algorithm
 
-### Performance Targets
+### Commit-Reveal Scheme
 
-- **Page Load**: < 2 seconds
-- **API Response**: < 200ms
-- **Transaction Confirm**: < 30 seconds (Solana finality)
-- **Event Processing**: < 5 seconds
+The system prevents any party from predicting the winner:
 
-## Monitoring & Observability
+**Commitment Phase** (Asset Creation):
+1. Entropy provider generates random 32-byte seed
+2. Compute commit = keccak256(seed)
+3. Pass commit hash to `open_var` instruction
 
-### Metrics Tracked
+**Reveal Phase** (After Randomness Available):
+1. Entropy provider reveals the pre-committed seed
+2. Verify: keccak256(revealed_seed) == original_commit
+3. Compute final random value: keccak256(slot_hash || seed || iterations)
 
-- Transaction success rate
-- API latency (p50, p95, p99)
-- Error rates by endpoint
-- Active users
-- Assets created/sold out
-- Revenue metrics
+**Security Properties**:
+- ✅ Entropy provider cannot predict slot_hash at commit time (300+ validators control)
+- ✅ Solana validators cannot predict seed (locked in commitment hash)
+- ✅ Each party controls independent randomness source
+- ✅ Final value combines both sources unpredictably
 
-### Tools
+### Seed Encryption
 
-- **Datadog**: Application monitoring
-- **Sentry**: Error tracking
-- **Solana Explorer**: On-chain verification
-- **MongoDB Atlas**: Database monitoring
+Seeds are encrypted at rest using AES-256-GCM:
 
-## Deployment
+```
+Encrypted = IV (16 bytes) || AuthTag (16 bytes) || Ciphertext
+```
 
-### Environments
+**Purpose**: Protects against premature revelation if database is compromised
 
-<Tabs>
-  <Tab title="Development">
-    - Solana: Devnet
-    - MongoDB: Local
-    - API: localhost:3000
-    - Frontend: localhost:5173
-  </Tab>
-  
-  <Tab title="Staging">
-    - Solana: Devnet
-    - MongoDB: Atlas (dev cluster)
-    - API: staging-api.tradmatrix.io
-    - Frontend: staging.tradmatrix.io
-  </Tab>
-  
-  <Tab title="Production">
-    - Solana: Mainnet-beta
-    - MongoDB: Atlas (production cluster)
-    - API: api.tradmatrix.io
-    - Frontend: tradmatrix.io
-  </Tab>
-</Tabs>
+## Ticket Numbering
 
-### CI/CD Pipeline
+Tickets use 1-based indexing for user-friendly display:
 
-1. Push to GitHub
-2. Run tests
-3. Build artifacts
-4. Deploy to staging
-5. Run integration tests
-6. Manual approval
-7. Deploy to production
+### Implementation
 
-## Disaster Recovery
+```
+Asset Creation:
+  └─ ticketsSold = 0
 
-### Backup Strategy
+First Purchase:
+  ├─ nextTicketNumber = ticketsSold + 1 = 1
+  ├─ PDA seed: ["ticket", assetId, 1]
+  ├─ Increment: ticketsSold = 1
+  └─ User sees: "Ticket #1"
 
-- **Smart Contract**: Immutable on-chain, no backup needed
-- **Database**: Daily snapshots, 30-day retention
-- **Keys**: Hardware wallet backup, multi-sig
-- **Code**: GitHub, multiple mirrors
+Final Purchase (100 tickets):
+  ├─ nextTicketNumber = ticketsSold + 1 = 100
+  ├─ PDA seed: ["ticket", assetId, 100]
+  ├─ Increment: ticketsSold = 100
+  └─ User sees: "Ticket #100"
+```
 
-### Recovery Procedures
+### Winner Selection Formula
 
-In case of:
-- **Database failure**: Restore from latest snapshot, replay events
-- **API failure**: Swap to backup instance, DNS update
-- **Smart contract bug**: Pause operations, deploy fix, migrate state
+```rust
+// On-chain computation
+let winning_ticket_number = (random_u64 % ticketsSold) + 1;
 
-<Card title="Next: Solana Program Details" icon="code" href="/technical/solana-program">
-  Deep dive into the Solana smart contract
+// Result: 1-based ticket number matching user's perception
+```
+
+The `+1` is critical: modulo produces 0 to (N-1), the +1 converts to 1-based range (1 to N).
+
+## Timing Constraints
+
+### SlotHashes Sysvar Availability
+
+- **Window**: 150 slots (~75 seconds) after target slot
+- **Fallback**: Deterministic hash if outside window
+- **Mitigation**: Event-driven automation ensures sampling within 10-15 seconds
+
+### Slot Progression Requirements
+
+```
+update_end_at(current_slot + 10)
+        ↓ [Must wait until current_slot >= target]
+sample_var (capture SlotHash)
+        ↓ [Immediate]
+reveal_var (derive final random value)
+        ↓ [Immediate]
+pick_winner (select winner)
+```
+
+## Transaction Batching Rules
+
+### ✅ Always Batch
+
+| Instructions | Reason |
+|--------------|--------|
+| `create_asset + open_var` | Randomness must be initialized with asset |
+| `init_user + buy_ticket` | User → immediate participation |
+
+### ❌ Never Batch
+
+| Instructions | Reason | Solution |
+|--------------|--------|----------|
+| Multiple `buy_ticket` | Both mutate `ticketsSold` | Submit separate sequential TXs |
+| `update_end_at + sample_var` | Must wait for target slot | ~5 second delay between |
+| `sample_var + reveal_var` | Censorship resistance | Permissionless separation |
+| `pick_winner + settle_winner` | Event-driven async | Backend reads WinnerSelected event |
+
+**Why separate sample_var + reveal_var?**
+- sample_var is permissionless; batching breaks this principle
+- Maintains audit trail with separate on-chain entries
+- Prevents timing violations if slots progress unexpectedly
+
+**Why separate pick_winner + settle_winner?**
+- pick_winner emits winning ticket number on-chain
+- Backend listens for WinnerSelected event
+- Backend then submits settle_winner with event data
+- Eliminates backend winner calculation; uses on-chain value
+
+## Performance Characteristics
+
+### Transaction Throughput
+
+- **Ticket Purchases**: Sequential per asset (ticketsSold conflicts)
+- **Users**: Parallel (independent wallets)
+- **Assets**: Parallel (independent asset accounts)
+- **Randomness Flow**: Sequential (inter-instruction dependencies)
+
+### Latency
+
+```
+Single Ticket Purchase: 0.5-2 seconds
+Sold Out → Winner: 15-20 seconds (automated)
+Total per Event: 15-25 seconds from final ticket
+```
+
+### Database Operations
+
+- **Event Processing**: ~100 writes per event cycle
+- **Entropy Storage**: 1 record per asset (32 bytes seed + overhead)
+- **Activity Logging**: ~15 entries per event cycle
+
+## Event Processing
+
+The backend subscribes to 13 blockchain events:
+
+| Event | Purpose |
+|-------|---------|
+| `tradmatrixCreated` | Platform initialized |
+| `assetCreated` | Asset created |
+| `userInitialized` | Participant onboarded |
+| `ticketPurchased` | Ticket acquired |
+| `assetSoldOut` | Triggers randomness automation |
+| `varOpened` | Randomness account created |
+| `varEndAtUpdated` | Triggers sampling automation |
+| `varSampled` | Triggers reveal automation |
+| `varRevealed` | Triggers winner selection |
+| `varNext` | Seed chaining for backup |
+| `samplesIncreased` | Iterations added |
+| `varClosed` | Randomness cleanup |
+| `winnerSelected` | Winner determined, funds distributed |
+| `winnerSettled` | Winner confirmed |
+
+## Error Handling & Recovery
+
+### Transaction Retry Strategy
+
+```
+Attempt 1: Immediate
+Attempt 2: Wait 1 second
+Attempt 3: Wait 2 seconds  
+Attempt 4: Wait 4 seconds
+Maximum: 4 total attempts
+```
+
+### Timing Violations
+
+If SlotHashes window exceeded:
+- Program uses fallback deterministic hash
+- Alert triggers in monitoring
+- Randomness still valid but reduced entropy
+- Retry with `next_var` for better randomness
+
+### Backup: Blockchain Polling
+
+Event listener failures trigger polling-based backup:
+- Runs every 60 seconds
+- Syncs all ACTIVE/SOLD_OUT assets
+- Catches events missed by real-time listener
+
+## Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────┐
+│             TRADMATRIX SYSTEM OVERVIEW              │
+├─────────────────────────────────────────────────────┤
+│                                                     │
+│  Frontend (React)    Blockchain (Solana)           │
+│  ├─ Wallet Auth      ├─ Tradmatrix Program         │
+│  ├─ Sign TX          ├─ 13 Instructions            │
+│  └─ Monitor Status   └─ 13 Events                  │
+│         │                    ▲                      │
+│         │                    │                      │
+│         └────────────────────┼──────────────────┐  │
+│                              │                  │  │
+│  Backend Services (Node.js)  │                  │  │
+│  ├─ Event Listener ◄────────┘                  │  │
+│  ├─ Transaction Builder                        │  │
+│  ├─ Entropy Service (Seeds & Commits)          │  │
+│  ├─ Transaction Submitter ────────────────────►│  │
+│  └─ Automation Handlers                        │  │
+│         │                                       │  │
+│         ▼                                       │  │
+│  MongoDB (Persistent State)                    │  │
+│  ├─ Assets & Tickets                           │  │
+│  ├─ Users & Activity                           │  │
+│  └─ Encrypted Entropy Seeds                    │  │
+│                                                 │  │
+└─────────────────────────────────────────────────────┘
+```
+
+## Deployment Checklist
+
+### Pre-Mainnet Verification
+
+- [ ] Entropy service tested with 10+ cycles
+- [ ] Transaction submitter retry logic operational
+- [ ] Event automation handlers integrated
+- [ ] Seed encryption key secured in environment
+- [ ] Monitoring and alerting configured
+- [ ] Admin key security reviewed
+
+### Post-Mainnet Monitoring
+
+- [ ] Randomness timing validation on live network
+- [ ] Failed transaction alerts
+- [ ] Pending automation dashboard
+- [ ] Weekly audit log reviews
+
+## Next Steps
+
+<Card title="Entropy Protocol Details" icon="sparkles" href="/technical/entropy-protocol">
+  Deep dive into the cryptographic commit-reveal scheme and provably fair randomness
 </Card>
-

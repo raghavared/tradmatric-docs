@@ -1,0 +1,438 @@
+---
+title: 'Entropy Protocol Integration'
+description: 'Deep dive into cryptographic randomness and the commit-reveal scheme'
+---
+
+# Entropy Protocol: Cryptographic Randomness
+
+## Executive Summary
+
+Entropy is a provably-fair random number generation protocol for Solana that uses a **commit-reveal scheme** combined with Solana's slot hashing to generate verifiable, manipulation-resistant randomness on-chain.
+
+**Core Innovation**: No single party (not the platform, not validators, not users) can predict or manipulate the final random value because:
+- The Entropy provider commits to a secret seed **before** the slot hash is determined
+- Solana validators produce the slot hash **after** the commitment
+- Both values are cryptographically combined to produce final randomness
+
+**For Tradmatrix**: Fair winner selection from distributed tickets without any party having influence over the outcome.
+
+## The Problem with On-Chain Randomness
+
+Generating truly random numbers on blockchain is fundamentally challenging:
+
+<Tabs>
+  <Tab title="Deterministic Execution">
+    Blockchain programs must be deterministic for consensus. If randomness is predictable, participants can front-run and manipulate outcomes.
+  </Tab>
+  <Tab title="Front-Running Risk">
+    Validators see transactions before execution. They could manipulate randomness if they controlled it directly.
+  </Tab>
+  <Tab title="Single-Party Risk">
+    If one entity controls randomness, they can guarantee desired outcomes for themselves or others.
+  </Tab>
+</Tabs>
+
+## Entropy's Solution: Commit-Reveal Scheme
+
+### Core Concept
+
+```
+Final Randomness = keccak256(
+  SlotHash(from 300+ validators) ||
+  Secret Seed(from Entropy provider) ||
+  Sample Number(unique identifier)
+)
+```
+
+Neither party can predict the final value because:
+- **SlotHash**: Unknown to Entropy provider at commit time, controlled by consensus
+- **Secret Seed**: Unknown to validators until reveal, locked in cryptographic hash
+- **Sample Number**: Ensures uniqueness across multiple selections
+
+### Commitment Phase
+
+The Entropy provider generates and commits to a secret seed:
+
+<Steps>
+  <Step title="Generate Secret">
+    ```
+    secret_seed = random_32_bytes()
+    commit = keccak256(secret_seed)
+    ```
+  </Step>
+  <Step title="Lock Commitment">
+    Provider submits commit to blockchain. Seed remains private.
+  </Step>
+  <Step title="Cannot Change">
+    Provider is cryptographically locked into this seed. Changing it would produce different commit.
+  </Step>
+</Steps>
+
+### Why the Commit is Critical
+
+**Without commitment** (❌ Vulnerable):
+```
+1. Asset sold at slot 1000
+2. Validators produce SlotHash(1005) = 0xABCD...
+3. Entropy provider sees slot hash
+4. Provider tests different seeds to find favorable outcome
+5. Provider submits seed → OUTCOME MANIPULATED
+```
+
+**With commitment** (✅ Secure):
+```
+1. Provider generates seed before any slots
+2. Provider commits to hash of seed
+3. Asset sells at slot 1000
+4. Validators produce SlotHash(1005) = 0xABCD... (unknown before commit)
+5. Provider reveals seed (cannot change it now)
+6. Chain verifies: keccak256(revealed_seed) == original_commit
+7. Final value cannot be predicted or controlled
+```
+
+### Reveal Phase
+
+After the slot hash is determined:
+
+<Steps>
+  <Step title="Provide Seed">
+    Entropy provider submits the actual secret seed that matches the commitment.
+  </Step>
+  <Step title="Verify Commitment">
+    ```rust
+    require(keccak256(revealed_seed) == stored_commit)
+    ```
+  </Step>
+  <Step title="Compute Final Value">
+    ```rust
+    final_value = keccak256(
+      slot_hash || revealed_seed || sample_number
+    )
+    ```
+  </Step>
+</Steps>
+
+## Protocol Instructions
+
+### open_var
+
+Initialize randomness account with commitment.
+
+```rust
+// Entropy provider submits:
+pub struct OpenVar {
+    pub commit: [u8; 32],  // Hash of secret seed
+    pub samples: u64,      // Number of drawings allowed
+}
+```
+
+**Effect**: Creates Var account locked to commitment. No randomness generated yet.
+
+### update_end_at
+
+Set target slot for slot hash sampling.
+
+```rust
+// Admin submits after asset sold out:
+pub struct UpdateEndAt {
+    pub end_at: u64,  // current_slot + 10
+}
+```
+
+**Timing**: Wait ~5 seconds for slot progression before sampling.
+
+### sample_var
+
+**PERMISSIONLESS** - Capture slot hash at target slot.
+
+```rust
+// Anyone can call (or backend automation):
+// - Reads: SlotHashes sysvar
+// - Stores: slot_hash in Var account
+// - Timing: Requires current_slot >= end_at
+```
+
+**Security**: Permissionless operation prevents censorship.
+
+### reveal_var
+
+Reveal secret seed and compute final random value.
+
+```rust
+// Entropy provider submits:
+pub struct RevealVar {
+    pub seed: [u8; 32],  // Matches original commitment
+}
+
+// Program validates:
+require(keccak256(seed) == var.commit);
+
+// Computes:
+var.value = keccak256(var.slot_hash || seed || var.samples)
+```
+
+**Effect**: Final randomness determined. Cannot be changed or predicted.
+
+### pick_winner
+
+Use random value to select winner.
+
+```rust
+// Program uses random value:
+let winning_ticket = (var.value % total_tickets) + 1;
+
+// Distributes proceeds:
+// - 1.5% → Platform fee account
+// - 98.5% → Asset owner
+```
+
+**Security**: Program controls distribution. No manual intervention.
+
+### next_var
+
+Enable backup winner selection through seed chaining.
+
+```rust
+// If winner doesn't claim:
+pub struct NextVar {
+    pub new_commit: keccak256(previous_seed),
+}
+
+// Seed chain prevents provider from choosing new seed
+```
+
+**Mechanism**: New commit is hash of previous seed, locking provider.
+
+## Complete Workflow
+
+### 1. Asset Creation (Admin + Backend)
+
+```
+Admin calls: create_asset + open_var (BATCHED)
+  ├─ Input: commit from entropy service
+  ├─ Creates: Asset PDA with status=ACTIVE
+  ├─ Creates: Var PDA with commit stored
+  └─ Backend stores: encrypted_seed for later reveal
+```
+
+### 2. Ticket Sales (Users)
+
+```
+User 1: init_user + buy_ticket (BATCHED)
+User 2-N: buy_ticket (SEQUENTIAL)
+  └─ Auto-status: SOLD_OUT when all sold
+```
+
+### 3. Randomness Automation Triggered
+
+```
+Event: assetSoldOut
+  ↓ [5s safety buffer]
+TX: update_end_at(current_slot + 10)
+  ↓ [Event: varEndAtUpdated]
+TX: sample_var (PERMISSIONLESS)
+  ↓ [~5 seconds for slot to progress]
+TX: reveal_var (Entropy provider)
+  ├─ Backend retrieves: stored encrypted_seed
+  ├─ Program validates: keccak256(seed) == commit
+  ├─ Computes: final_value = keccak256(slot_hash || seed || samples)
+  └─ Event: varRevealed
+```
+
+### 4. Winner Selection (Automated)
+
+```
+TX: pick_winner
+  ├─ Calculates: winning_ticket = (final_value % total) + 1
+  ├─ Distributes: 1.5% fee, 98.5% to owner
+  ├─ Updates: Asset.status = COMPLETED
+  └─ Event: WinnerSelected
+
+TX: settle_winner
+  ├─ Records: winner_address for transparency
+  └─ Event: WinnerSettled
+```
+
+## Seed Management
+
+### Generation
+
+```rust
+// Backend entropy service:
+fn generate_seed() -> [u8; 32] {
+  use crypto::rand::thread_rng;
+  thread_rng().gen::<[u8; 32]>()
+}
+```
+
+### Storage
+
+Seeds are encrypted at rest using AES-256-GCM:
+
+```
+Encrypted = IV (16) || AuthTag (16) || Ciphertext
+  ├─ IV: Random initialization vector
+  ├─ AuthTag: Authentication verification
+  └─ Ciphertext: AES-256 encrypted seed
+```
+
+**Purpose**: Protects against premature revelation if database compromised
+
+### Lifecycle
+
+```
+1. Generate:   seed = random(32 bytes)
+2. Commit:     commit = keccak256(seed)
+3. Store:      database.encrypted_seed = AES256_encrypt(seed)
+4. Submit:     on_chain.commit = submit_open_var(commit)
+5. Secure:     seed locked until reveal (cannot change)
+6. Reveal:     encrypted_seed → decrypt → submit to reveal_var
+7. Verify:     program checks keccak256(revealed) == commit
+8. Complete:   seed used to compute final random value
+```
+
+## Ticket Numbering & Winner Selection
+
+### 1-Based Indexing
+
+Tickets are numbered 1 to N (user-friendly):
+
+```rust
+// Asset created with numberOfTickets = 100
+asset.ticketsSold = 0
+
+// Each ticket purchase:
+let ticket_number = asset.ticketsSold + 1;  // 1, 2, 3, ..., 100
+asset.ticketsSold += 1;
+
+// When sold out:
+asset.ticketsSold == 100 (all tickets sold)
+```
+
+### Winner Selection Formula
+
+```rust
+// Get random value from Var account
+let random_value = var.value;
+
+// Extract first 8 bytes as u64
+let random_u64 = u64::from_le_bytes(random_value[0..8]);
+
+// Select winning ticket (1-based)
+let winning_ticket_number = (random_u64 % asset.ticketsSold) + 1;
+```
+
+**Why +1?** 
+- Modulo produces 0 to (N-1)
+- Tickets numbered 1 to N
+- Adding 1 maps to correct range
+
+**Example**: 100 tickets sold
+```
+random_u64 = 0x123456789ABCDEF0 (some large number)
+random_u64 % 100 = 45 (range: 0-99)
++ 1 = 46 (range: 1-100) ✓
+```
+
+## Backup Winner Selection (Seed Chaining)
+
+If winner doesn't claim or needs to repeat:
+
+### First Selection Failed
+
+```
+1. Random value computed, winner identified
+2. Winner doesn't claim within deadline
+3. Need to select backup winner from same asset
+```
+
+### Seed Chaining Process
+
+```rust
+// First seed was locked:
+original_commit = keccak256(original_seed)
+
+// For backup, create new commit:
+new_commit = keccak256(original_seed)  // Previous seed becomes new commit!
+
+// This prevents provider from choosing new seed
+// Provider is locked into: keccak256(original_seed)
+```
+
+**Why this works**:
+- Provider cannot change `original_seed` (already revealed)
+- Cannot predict or manipulate new randomness
+- Chain prevents any tampering
+
+## Timing Constraints
+
+### SlotHashes Sysvar
+
+Solana provides recent slot hashes in a sysvar:
+
+```
+Availability: Last 150 slots (~75 seconds)
+Fallback: If older, program uses deterministic hash
+Risk: Reduced entropy quality if outside window
+```
+
+### Optimal Timing
+
+```
+[Asset Sold Out]
+  ↓ 5 second buffer
+[update_end_at] → set end_at = current_slot + 10
+  ↓ ~5 seconds (slot progression)
+[sample_var] → capture SlotHash(end_at)
+  ↓ immediate
+[reveal_var] → derive random value
+  ↓ immediate
+[pick_winner] → select winner
+```
+
+**Total**: 15-20 seconds from sold out to winner selected
+
+## Security Guarantees
+
+<CardGroup cols={2}>
+  <Card title="Unpredictability" icon="sparkles">
+    Admin cannot predict slot_hash at commit time (controlled by 300+ validators)
+  </Card>
+  <Card title="Unforgeability" icon="shield-check">
+    Commitment is cryptographic hash; cannot be changed after creation
+  </Card>
+  <Card title="Verifiability" icon="eye">
+    Anyone can verify: keccak256(seed) == stored_commit on-chain
+  </Card>
+  <Card title="Tamper-Proof" icon="lock">
+    Seed locked in commitment before any randomness is available
+  </Card>
+</CardGroup>
+
+## Implementation Checklist
+
+- [ ] Generate random 32-byte seed using cryptographic RNG
+- [ ] Compute keccak256(seed) for commitment
+- [ ] Store encrypted seed in database with AES-256-GCM
+- [ ] Submit commitment to open_var instruction
+- [ ] Monitor varEndAtUpdated event
+- [ ] Trigger sample_var at appropriate timing
+- [ ] Decrypt and retrieve seed on reveal
+- [ ] Submit reveal_var with original seed
+- [ ] Verify program accepts reveal (keccak256 matches)
+- [ ] Handle varRevealed event to continue workflow
+- [ ] Trigger pick_winner for final selection
+- [ ] Implement backup selection with seed chaining
+- [ ] Monitor for SlotHashes sysvar timing violations
+- [ ] Implement fallback hash strategy if needed
+
+## Next Steps
+
+<CardGroup>
+  <Card title="System Architecture" icon="code" href="/technical/architecture">
+    How Entropy integrates with the full Tradmatrix system
+  </Card>
+  <Card title="API Reference" icon="book" href="/technical/api">
+    Complete API documentation for all endpoints
+  </Card>
+</CardGroup>

@@ -1,5 +1,5 @@
 {
-  "name": "TradMatrix",
+  "name": "Tradmatrix",
   "theme": "prism",
   "logo": {
     "light": "/public/lego_logo_black.png",
@@ -32,7 +32,7 @@
   ],
   "navigation": [
     {
-      "group": "Introduction",
+      "group": "Getting Started",
       "pages": [
         "introduction",
         "how-it-works",
@@ -40,22 +40,23 @@
       ]
     },
     {
-      "group": "Getting Started",
+      "group": "User Guide",
       "pages": [
         "getting-started/for-users",
         "getting-started/for-asset-owners"
       ]
     },
     {
-      "group": "Roadmap",
+      "group": "Technical Architecture",
       "pages": [
-        "roadmap/overview"
+        "technical/architecture",
+        "technical/entropy-protocol"
       ]
     },
     {
-      "group": "Technical",
+      "group": "Roadmap",
       "pages": [
-        "technical/architecture"
+        "roadmap/overview"
       ]
     }
   ],

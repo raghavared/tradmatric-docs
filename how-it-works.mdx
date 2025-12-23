@@ -1,13 +1,13 @@
 ---
 title: 'How It Works'
-description: 'Step-by-step guide to the TradMatrix Asset trading process'
+description: 'Step-by-step guide to the Tradmatrix Asset trading process'
 ---
 
 ## The Complete Flow
 
 <Steps>
   <Step title="Asset Listing">
-    Asset owner lists their asset on TradMatrix with:
+    Asset owner lists their asset on Tradmatrix with:
     - Asset details and images (up to 50 photos)
     - Total number of tickets
     - Price per ticket
@@ -31,7 +31,7 @@ description: 'Step-by-step guide to the TradMatrix Asset trading process'
   
   <Step title="Winner Selection">
     Provably fair random selection:
-    - Uses Switchboard VRF for randomness
+    - Uses Entropy's provably fair algorithm
     - Cannot be manipulated
     - Transparent on-chain
     - Winner immediately notified
@@ -89,16 +89,9 @@ Each purchase:
 
 When sold out, admin calls `pick_winner` instruction:
 
-```typescript
-// Random winner selection
-const winnerSelection = {
-  assetId: 0,
-  vrfAccount: switchboardVrfAccount
-};
-```
+The winner selection process is completely deterministic and transparent:
 
-The process:
-1. Fetches random value from Switchboard VRF
+1. Entropy protocol generates a cryptographically secure random value
 2. Calculates: `winningTicket = randomValue % totalTickets`
 3. Looks up ticket owner from on-chain PDA
 4. Distributes funds automatically
@@ -138,21 +131,21 @@ $5,000 (50 tickets) → 1.00% chance
 ## Security Guarantees
 
 <Warning>
-  **Verifiable Randomness**: TradMatrix uses Switchboard VRF, which provides cryptographically secure randomness that cannot be predicted or manipulated by anyone, including platform operators.
+  **Provably Fair Algorithm**: Tradmatrix uses Entropy's provably fair algorithm, which provides cryptographically secure randomness that cannot be predicted or manipulated by anyone, including platform operators.
 </Warning>
 
-### How VRF Works
+### How Entropy's Algorithm Works
 
-1. **Request**: Winner selection requests random value
-2. **Generate**: Switchboard oracle generates provably random number
-3. **Verify**: Anyone can verify the randomness was generated correctly
-4. **Immutable**: Result is stored on-chain permanently
+1. **Commitment**: Entropy provider commits to a secret seed before randomness is available
+2. **Sampling**: Solana validators produce unpredictable randomness through slot hashing
+3. **Revelation**: Pre-committed seed is revealed and verified on-chain
+4. **Generation**: Final random value is derived from both sources, making it impossible for any party to control
 
 This ensures:
-- No one can predict the winner
-- No one can manipulate the result
+- No single party can predict the outcome
+- The platform cannot manipulate the result
 - All participants have equal odds
-- Process is completely transparent
+- Process is completely transparent and verifiable on-chain
 
 ## What Happens Next?
 
