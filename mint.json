@@ -14,10 +14,15 @@
       "dark": "#0f0f0f"
     }
   },
-  
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/tradmatrix"
+    }
+  ],
   "topbarCtaButton": {
     "name": "Launch App",
-    "url": "https://www.tradmatrix.com"
+    "url": "https://app.tradmatrix.io"
   },
   "tabs": [
     {
@@ -57,7 +62,7 @@
   ],
   "footerSocials": {
     "twitter": "https://twitter.com/tradmatrix",
-    
+    "github": "https://github.com/tradmatrix",
     "discord": "https://discord.gg/tradmatrix"
   }
 }
