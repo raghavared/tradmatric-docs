@@ -9,21 +9,21 @@ description: 'Step-by-step guide to the Tradmatrix Asset trading process'
   <Step title="Asset Listing">
     Asset owner lists their asset on Tradmatrix with:
     - Asset details and images (up to 50 photos)
-    - Total number of tickets
-    - Price per ticket
+    - Total number of tokens
+    - Price per token
     - Verification documents
   </Step>
   
-  <Step title="Ticket Sales">
-    Participants purchase tickets using USDC:
+  <Step title="Token Sales">
+    Participants purchase tokens using USDC:
     - Connect Solana wallet
-    - Buy 1 or multiple tickets
-    - Each ticket = 1 entry
+    - Buy 1 or multiple tokens
+    - Each token = 1 entry
     - Sales tracked in real-time
   </Step>
   
   <Step title="Sold Out">
-    When all tickets are sold:
+    When all tokens are sold:
     - Asset status changes to "Sold Out"
     - Funds held in escrow
     - Ready for winner selection
@@ -52,10 +52,10 @@ description: 'Step-by-step guide to the Tradmatrix Asset trading process'
 Asset owners create a listing by calling the `create_asset` instruction:
 
 ```typescript
-// Example: $500K asset with 5,000 tickets at $100 each
+// Example: $500K asset with 5,000 tokens at $100 each
 const assetParams = {
-  numberOfTickets: 5000,
-  ticketCost: 100_000_000, // 100 USDC (6 decimals)
+  numberOfTokens: 5000,
+  tokenCost: 100_000_000, // 100 USDC (6 decimals)
   assetOwner: ownerPublicKey,
   platformAuthority: platformPublicKey
 };
@@ -63,27 +63,27 @@ const assetParams = {
 
 The platform creates:
 - **Asset PDA**: Stores all asset information
-- **Asset Vault**: Holds USDC from ticket sales
+- **Asset Vault**: Holds USDC from token sales
 - **Unique Asset ID**: Auto-incrementing identifier
 
-### 2. Ticket Purchase
+### 2. Token Purchase
 
-Users buy tickets by calling the `buy_ticket` instruction:
+Users buy tokens by calling the `buy_token` instruction:
 
 ```typescript
-// Purchase tickets
-const ticketPurchase = {
+// Purchase tokens
+const tokenPurchase = {
   assetId: 0,
-  quantity: 5, // Buy 5 tickets
+  quantity: 5, // Buy 5 tokens
   buyer: userPublicKey
 };
 ```
 
 Each purchase:
 - Transfers USDC to asset vault
-- Creates ticket PDA with unique number (0, 1, 2, ...)
-- Updates asset's `ticketsSold` counter
-- Emits `TicketPurchased` event
+- Creates token PDA with unique number (0, 1, 2, ...)
+- Updates asset's `tokensSold` counter
+- Emits `TokenPurchased` event
 
 ### 3. Winner Selection
 
@@ -92,8 +92,8 @@ When sold out, admin calls `pick_winner` instruction:
 The winner selection process is completely deterministic and transparent:
 
 1. Entropy protocol generates a cryptographically secure random value
-2. Calculates: `winningTicket = randomValue % totalTickets`
-3. Looks up ticket owner from on-chain PDA
+2. Calculates: `winningToken = randomValue % totalTokens`
+3. Looks up token owner from on-chain PDA
 4. Distributes funds automatically
 5. Emits `WinnerSelected` event
 
@@ -104,27 +104,27 @@ The winner selection process is completely deterministic and transparent:
 Your winning probability is straightforward:
 
 ```
-P(win) = (your tickets) / (total tickets)
+P(win) = (your tokens) / (total tokens)
 
 Examples:
-- 1 ticket of 5,000 = 0.02% chance
-- 10 tickets of 5,000 = 0.2% chance
-- 100 tickets of 5,000 = 2% chance
+- 1 token of 5,000 = 0.02% chance
+- 10 tokens of 5,000 = 0.2% chance
+- 100 tokens of 5,000 = 2% chance
 ```
 
-### Multiple Ticket Strategy
+### Multiple Token Strategy
 
-Buying more tickets increases your probability:
+Buying more tokens increases your probability:
 
 <Accordion title="Probability Calculator">
 ```
-Asset: 5,000 tickets @ $100 each
+Asset: 5,000 tokens @ $100 each
 Investment vs Probability:
 
-$100 (1 ticket)    → 0.02% chance
-$500 (5 tickets)   → 0.10% chance
-$1,000 (10 tickets) → 0.20% chance
-$5,000 (50 tickets) → 1.00% chance
+$100 (1 token)    → 0.02% chance
+$500 (5 tokens)   → 0.10% chance
+$1,000 (10 tokens) → 0.20% chance
+$5,000 (50 tokens) → 1.00% chance
 ```
 </Accordion>
 

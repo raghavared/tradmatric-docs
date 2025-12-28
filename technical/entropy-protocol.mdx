@@ -14,7 +14,7 @@ Entropy is a provably-fair random number generation protocol for Solana that use
 - Solana validators produce the slot hash **after** the commitment
 - Both values are cryptographically combined to produce final randomness
 
-**For Tradmatrix**: Fair winner selection from distributed tickets without any party having influence over the outcome.
+**For Tradmatrix**: Fair winner selection from distributed tokens without any party having influence over the outcome.
 
 ## The Problem with On-Chain Randomness
 
@@ -179,7 +179,7 @@ Use random value to select winner.
 
 ```rust
 // Program uses random value:
-let winning_ticket = (var.value % total_tickets) + 1;
+let winning_token = (var.value % total_tokens) + 1;
 
 // Distributes proceeds:
 // - 1.5% → Platform fee account
@@ -215,11 +215,11 @@ Admin calls: create_asset + open_var (BATCHED)
   └─ Backend stores: encrypted_seed for later reveal
 ```
 
-### 2. Ticket Sales (Users)
+### 2. Token Sales (Users)
 
 ```
-User 1: init_user + buy_ticket (BATCHED)
-User 2-N: buy_ticket (SEQUENTIAL)
+User 1: init_user + buy_token (BATCHED)
+User 2-N: buy_token (SEQUENTIAL)
   └─ Auto-status: SOLD_OUT when all sold
 ```
 
@@ -243,7 +243,7 @@ TX: reveal_var (Entropy provider)
 
 ```
 TX: pick_winner
-  ├─ Calculates: winning_ticket = (final_value % total) + 1
+  ├─ Calculates: winning_token = (final_value % total) + 1
   ├─ Distributes: 1.5% fee, 98.5% to owner
   ├─ Updates: Asset.status = COMPLETED
   └─ Event: WinnerSelected
@@ -291,22 +291,22 @@ Encrypted = IV (16) || AuthTag (16) || Ciphertext
 8. Complete:   seed used to compute final random value
 ```
 
-## Ticket Numbering & Winner Selection
+## Token Numbering & Winner Selection
 
 ### 1-Based Indexing
 
-Tickets are numbered 1 to N (user-friendly):
+Tokens are numbered 1 to N (user-friendly):
 
 ```rust
-// Asset created with numberOfTickets = 100
-asset.ticketsSold = 0
+// Asset created with numberOfTokens = 100
+asset.tokensSold = 0
 
-// Each ticket purchase:
-let ticket_number = asset.ticketsSold + 1;  // 1, 2, 3, ..., 100
-asset.ticketsSold += 1;
+// Each token purchase:
+let token_number = asset.tokensSold + 1;  // 1, 2, 3, ..., 100
+asset.tokensSold += 1;
 
 // When sold out:
-asset.ticketsSold == 100 (all tickets sold)
+asset.tokensSold == 100 (all tokens sold)
 ```
 
 ### Winner Selection Formula
@@ -318,16 +318,16 @@ let random_value = var.value;
 // Extract first 8 bytes as u64
 let random_u64 = u64::from_le_bytes(random_value[0..8]);
 
-// Select winning ticket (1-based)
-let winning_ticket_number = (random_u64 % asset.ticketsSold) + 1;
+// Select winning token (1-based)
+let winning_token_number = (random_u64 % asset.tokensSold) + 1;
 ```
 
 **Why +1?** 
 - Modulo produces 0 to (N-1)
-- Tickets numbered 1 to N
+- Tokens numbered 1 to N
 - Adding 1 maps to correct range
 
-**Example**: 100 tickets sold
+**Example**: 100 tokens sold
 ```
 random_u64 = 0x123456789ABCDEF0 (some large number)
 random_u64 % 100 = 45 (range: 0-99)

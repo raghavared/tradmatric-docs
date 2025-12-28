@@ -30,8 +30,8 @@ Seamless fiat-to-crypto flow via Stripe:
   <Step title="Auto-Conversion">
     Fiat → USDC conversion behind the scenes
   </Step>
-  <Step title="Ticket Issued">
-    User receives ticket, no wallet needed
+  <Step title="Token Issued">
+    User receives token, no wallet needed
   </Step>
 </Steps>
 
@@ -57,8 +57,8 @@ sequenceDiagram
     Stripe->>Backend: Payment webhook
     Backend->>Circle: Convert USD to USDC
     Circle-->>Backend: USDC minted
-    Backend->>Solana: Buy ticket on-chain
-    Solana-->>Backend: Ticket created
+    Backend->>Solana: Buy token on-chain
+    Solana-->>Backend: Token created
     Backend-->>User: Email confirmation
 ```
 
@@ -80,7 +80,7 @@ sequenceDiagram
    - User-specific addresses
 
 4. **Smart Contract Integration**
-   - Automated ticket purchase
+   - Automated token purchase
    - On-chain verification
    - Winner notification
 
@@ -90,7 +90,7 @@ sequenceDiagram
 
 ```typescript
 // New endpoint for card payments
-POST /api/tickets/buy-with-card
+POST /api/tokens/buy-with-card
 
 {
   "assetId": 123,
@@ -105,7 +105,7 @@ Response flow:
 2. Charge card via Stripe
 3. Convert USD to USDC via Circle
 4. Create custodial wallet for user (if first time)
-5. Execute on-chain ticket purchase
+5. Execute on-chain token purchase
 6. Send confirmation email
 7. Store payment record
 
@@ -116,7 +116,7 @@ Response flow:
 {
   userId: ObjectId,
   assetId: number,
-  ticketQuantity: number,
+  tokenQuantity: number,
   amountUSD: number,
   amountUSDC: number,
   stripePaymentId: string,
@@ -152,15 +152,15 @@ To cover additional costs:
 
 ### Example Calculation
 
-$100 ticket via credit card:
+$100 token via credit card:
 ```
-Ticket Cost:         $100.00
+Token Cost:         $100.00
 Processing Fee:      $3.40 (3.4%)
 Platform Fee:        $1.50 (1.5%)
 ------------------------
 Total Charged:       $104.90
 User Pays:           $104.90
-Asset Owner Gets:    $98.50 (from ticket pool)
+Asset Owner Gets:    $98.50 (from token pool)
 ```
 
 ## Compliance & Legal
@@ -195,7 +195,7 @@ Must comply with:
 1. **No wallet needed**
    - Sign up with email
    - Use credit card
-   - Receive tickets automatically
+   - Receive tokens automatically
 
 2. **Gradual crypto education**
    - Optional wallet creation
@@ -226,14 +226,14 @@ Must comply with:
 ### Phase 2B: Limited Launch (Q2 2025)
 
 - Enable for US users only
-- $10-$100 ticket range
+- $10-$100 token range
 - Monitor for issues
 - Refine UX
 
 ### Phase 2C: Full Launch (Q3 2025)
 
 - Expand internationally
-- All ticket prices
+- All token prices
 - Marketing campaign
 - Scale infrastructure
 
@@ -242,7 +242,7 @@ Must comply with:
 ### Target KPIs
 
 - **Conversion rate**: 10%+ of card users complete purchase
-- **Average ticket size**: $150+ (higher than crypto users)
+- **Average token size**: $150+ (higher than crypto users)
 - **User growth**: 5x increase in monthly new users
 - **Revenue mix**: 40% from card payments within 6 months
 
@@ -252,7 +252,7 @@ Track in real-time:
 - Payment success rate
 - Average processing time
 - Failed transaction reasons
-- User support tickets
+- User support tokens
 - Fee revenue breakdown
 
 ## Risks & Mitigation
